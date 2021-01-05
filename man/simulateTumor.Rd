@@ -5,28 +5,32 @@
 \title{Spatial simulation of tumor growth}
 \usage{
 simulateTumor(
-  N = 250000,
-  b = 0.25,
-  d = 0.18,
-  u = 0.01,
-  du = 0.003,
-  s = 1.05,
+  max_pop = 250000,
+  div_rate = 0.25,
+  death_rate = 0.18,
+  mut_rate = 0.01,
+  driver_prob = 0.003,
+  selective_adv = 1.05,
+  disease_model = NULL,
   verbose = TRUE
 )
 }
 \arguments{
-\item{N}{Number of cells in the tumor.}
+\item{max_pop}{Number of cells in the tumor.}
 
-\item{b}{Cell division rate.}
+\item{div_rate}{Cell division rate.}
 
-\item{d}{Cell death rate.}
+\item{death_rate}{Cell death rate.}
 
-\item{u}{Mutation rate. When a cell divides, both daughter cell acquire \eqn{Pois(u)} genetic alterations}
+\item{mut_rate}{Mutation rate. When a cell divides, both daughter cell acquire \eqn{Pois(u)} genetic alterations}
 
-\item{du}{The probability that a genetic alteration is a driver mutation.}
+\item{driver_prob}{The probability that a genetic alteration is a driver mutation.}
 
-\item{s}{The selective advantage conferred to a driver mutation. A cell with k
+\item{selective_adv}{The selective advantage conferred to a driver mutation. A cell with k
 driver mutations is given birth rate \eqn{bs^k}.}
+
+\item{disease_model}{Edge list for a directed acyclic graph describing possible transitions between states. See
+\code{\link{progressionChain}()} for an example of a valid input matrix.}
 
 \item{verbose}{Whether or not to print simulation details to the R console.}
 }
@@ -41,7 +45,7 @@ and the mutation allele frequency (which is the count divided by N).
 \item \code{phylo_tree} - A data frame giving all of the information necessary to determine the order of mutations. The parent
 of a mutation is defined to be the most recent mutation that precedes it. Since the ID 0 corresponds to the initial mutation,
 0 does not have any parents and is thus the root of the tree. 
-\item \code{alleles} - A data frame containing the information about the mutations that make up each allele. The \eqn{i}-th 
+\item \code{genotypes} - A data frame containing the information about the mutations that make up each allele. The \eqn{i}-th 
 row of this data frame corresponds to the allele ID \eqn{i-1}. The positive numbers in each row correspond to the IDs of the 
 mutations present in that allele, while a -1 is simply a placeholder and indicates no mutation. The count column gives
 the number of cells which have the specific allele. 
@@ -67,9 +71,12 @@ alteration is a driver mutation with some probability \eqn{du}. A cell with k dr
 The model is simulated using a Gillespie algorithm. See the package vignette for details on how the algorithm is implemented.
 }
 \examples{
-out <- simulateTumor(N = 1000)
+out <- simulateTumor(max_pop = 1000)
 #Take a look at mutants in order of decreasing MAF
 sig_muts <- out$muts[order(out$muts$MAF, decreasing = TRUE),]
+
+#Specify the disease model
+out <- simulateTumor(max_pop = 1000, disease_model = progressionChain(3))
 
 }
 \references{

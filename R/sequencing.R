@@ -16,7 +16,7 @@
 #' @author Phillip B. Nicol <philnicol740@gmail.com>
 #' 
 #' @examples
-#' out <- simulateTumor(N = 1000)
+#' out <- simulateTumor(max_pop = 1000)
 #' df <- randomSingleCells(tumor = out, ncells = 5, fnr = 0.1) 
 
 randomSingleCells <- function(tumor, ncells, fpr = 0.0, fnr = 0.0) {
@@ -27,7 +27,7 @@ randomSingleCells <- function(tumor, ncells, fpr = 0.0, fnr = 0.0) {
   counter <- 1
   for(i in cells) {
     allele <- tumor$cell_ids[i,4] + 1
-    row <- tumor$alleles[allele,]
+    row <- tumor$genotypes[allele,]
     df[counter,] <- rep(0, ncol(df))
     rownames(df)[counter] <- sprintf("SC-%d", counter)
     for(j in row) {
@@ -81,7 +81,7 @@ add_noise <- function(x, fpr, fnr) {
 #' 
 #' @examples 
 #' set.seed(1126490984)
-#' out <- simulateTumor(N = 1000)
+#' out <- simulateTumor(max_pop = 1000)
 #' df <- singleCell(tumor = out, pos = c(0,0,0), noise = 0.1)
 #' 
 #' @references 
@@ -101,7 +101,7 @@ singleCell <- function(tumor, pos, noise = 0.0) {
   df <- data.frame(matrix(nrow = 1, ncol = 0))
 
   allele <- cell_df[,4] + 1
-  row <- tumor$alleles[allele,]
+  row <- tumor$genotypess[allele,]
   
   for(j in row) {
     if(j == -1) {
@@ -126,6 +126,7 @@ singleCell <- function(tumor, pos, noise = 0.0) {
 #' @param nsamples The number of bulk samples to take. 
 #' @param cube.length The side length of the cube of cells to be sampled. 
 #' @param threshold Only mutations with an allele frequency greater than the threshold will be included in the sample.
+#' @param coverage If nonzero then deep sequencing with specified coverage is performed. 
 #' 
 #' @return A data frame with \code{nsamples} rows and columns corresponding to the mutations. 
 #' The entries are the mutation allele frequency.
@@ -134,11 +135,11 @@ singleCell <- function(tumor, pos, noise = 0.0) {
 #' with random center points. 
 #' 
 #' @examples 
-#' out <- simulateTumor(N = 1000)
+#' out <- simulateTumor(max_pop = 1000)
 #' df <- randomBulkSamples(tumor = out, nsamples = 5, cube.length = 5, threshold = 0.05)
 #' 
 #' @author Phillip B. Nicol 
-randomBulkSamples <- function(tumor, nsamples, cube.length = 5, threshold = 0.05) {
+randomBulkSamples <- function(tumor, nsamples, cube.length = 5, threshold = 0.05, coverage = 0) {
   if(cube.length %% 2 == 0 | cube.length < 1) {
     stop("cube.length must be an odd positive integer.")
   }
@@ -160,7 +161,7 @@ randomBulkSamples <- function(tumor, nsamples, cube.length = 5, threshold = 0.05
     
     input <- list()
     input$cell_ids <- cell_subset
-    input$alleles <- tumor$alleles
+    input$genotypes <- tumor$genotypes
     total_sqnc <- as.data.frame(randomSingleCells(input, nrow(cell_subset)))
     total_sqnc <- colSums(total_sqnc)/bulk_size
     total_sqnc <- total_sqnc[total_sqnc > threshold]
@@ -183,6 +184,12 @@ randomBulkSamples <- function(tumor, nsamples, cube.length = 5, threshold = 0.05
     counter <- counter + 1
   }
   
+  #if depth non-zero, simulate NGS
+  if(coverage != 0) {
+    depth <- rpois(1,coverage)
+    df <- apply(df, c(1,2), function(x) return(rbinom(1,depth,x)))/depth
+  }
+  
   return(as.data.frame(df))
 }
 
@@ -195,6 +202,7 @@ randomBulkSamples <- function(tumor, nsamples, cube.length = 5, threshold = 0.05
 #' @param pos The center point of the sample.
 #' @param cube.length The side length of the cube of cells to be sampled. 
 #' @param threshold Only mutations with an allele frequency greater than the threshold will be included in the sample.
+#' @param coverage If nonzero then deep sequencing with specified coverage is performed. 
 #' 
 #' @return A data frame with 1 row and columns corresponding to the mutations. The entries are the mutation allele frequency.
 #' 
@@ -203,13 +211,18 @@ randomBulkSamples <- function(tumor, nsamples, cube.length = 5, threshold = 0.05
 #' allele frequency. Lattice sites without cells are assumed to be normal tissue, and thus the reported MAF may be less than
 #' 1.0 even if the mutation is present in all cancerous cells. 
 #' 
+#' If \code{coverage} is non-zero then deep sequencing can be simulated. For a chosen coverage \eqn{C}, it is known
+#' that the number of times the base is read follows a \eqn{Pois(C)} distribution (see Illumina's website). 
+#' Let \eqn{d} be the true coverage
+#' sampled from this distribution. Then the estimated VAF is drawn from a \eqn{Bin(d,p)/d} distribution. 
+#' 
 #' Note that \code{cube.length} is required to be an odd integer (in order to have a well-defined center point). 
 #' 
 #' @author Phillip B. Nicol 
 #' 
 #' @examples 
 #' set.seed(116776544, kind = "Mersenne-Twister", normal.kind = "Inversion")
-#' out <- simulateTumor(N = 1000)
+#' out <- simulateTumor(max_pop = 1000)
 #' df <- bulkSample(tumor = out, pos = c(0,0,0))
 #' 
 #' @references 
@@ -217,7 +230,9 @@ randomBulkSamples <- function(tumor, nsamples, cube.length = 5, threshold = 0.05
 #' A. Sottoriva. Spatially con- strained tumour growth affects the 
 #' patterns of clonal selection and neutral drift in cancer genomic data. PLOS Computational Biology, 2019.
 #'  https://doi.org/10.1371/journal.pcbi.1007243.
-bulkSample <- function(tumor, pos, cube.length = 5, threshold = 0.05) {
+#'  Lander ES, Waterman MS.(1988) Genomic mapping by fingerprinting random clones: 
+#'  a mathematical analysis, Genomics 2(3): 231-239.
+bulkSample <- function(tumor, pos, cube.length = 5, threshold = 0.05, coverage = 0) {
   if(length(pos) != 3) {
     stop("Position must be a vector of length 3.")
   }
@@ -243,7 +258,7 @@ bulkSample <- function(tumor, pos, cube.length = 5, threshold = 0.05) {
   
   input <- list()
   input$cell_ids <- cell_subset
-  input$alleles <- tumor$alleles
+  input$genotypes <- tumor$genotypes
   total_sqnc <- as.data.frame(randomSingleCells(input, nrow(cell_subset)))
   total_sqnc <- colSums(total_sqnc)/bulk_size
   total_sqnc <- total_sqnc[total_sqnc > threshold]
@@ -261,8 +276,15 @@ bulkSample <- function(tumor, pos, cube.length = 5, threshold = 0.05) {
       df[1, ncol(df)] <- total_sqnc[1,j]
     }
   }
+  
+  #if coverage non-zero, simulate NGS
+  if(coverage != 0) {
+    depth <- rpois(1,coverage)
+    df <- apply(df, c(1,2), function(x) return(rbinom(1,depth,x)))/depth
+  }
+  
 
-return(as.data.frame(df))
+  return(as.data.frame(df))
 }
 
 
@@ -275,7 +297,7 @@ return(as.data.frame(df))
 #' @param tumor A list which is the output of \code{\link{simulateTumor}()}.
 #' @param nsamples The number of samples to take.
 #' @param threshold Only mutations with an allele frequency greater than the threshold will be included in the sample.
-#' 
+#' @param coverage If nonzero then deep sequencing with specified coverage is performed.
 #' @author Phillip B. Nicol
 #' 
 #' @details This sampling procedure is inspired by Chkhaidze et. al. (2019) and simulates 
@@ -283,7 +305,7 @@ return(as.data.frame(df))
 #' of the tumor is chosen, and the cells within this cross section are sampled, reporting mutation allele frequency. 
 #' 
 #' @examples 
-#' out <- simulateTumor(N = 1000)
+#' out <- simulateTumor(max_pop = 1000)
 #' df <- randomNeedles(tumor = out, nsamples = 5)
 #' 
 #' @references 
@@ -291,7 +313,7 @@ return(as.data.frame(df))
 #' A. Sottoriva. Spatially con- strained tumour growth affects the 
 #' patterns of clonal selection and neutral drift in cancer genomic data. PLOS Computational Biology, 2019.
 #'  https://doi.org/10.1371/journal.pcbi.1007243.
-randomNeedles <- function(tumor, nsamples, threshold = 0.05) {
+randomNeedles <- function(tumor, nsamples, threshold = 0.05, coverage = 0) {
   cells <- sample(1:nrow(tumor$cell_ids), nsamples, replace = F)
   
   df <- data.frame(matrix(nrow = nsamples, ncol = 0))
@@ -304,7 +326,7 @@ randomNeedles <- function(tumor, nsamples, threshold = 0.05) {
       
     input <- list()
     input$cell_ids <- cell_subset
-    input$alleles <- tumor$alleles
+    input$genotypes <- tumor$genotypes
     total_sqnc <- as.data.frame(randomSingleCells(input, nrow(cell_subset)))
     total_sqnc <- colSums(total_sqnc)/nrow(cell_subset)
     total_sqnc <- total_sqnc[total_sqnc > threshold]
@@ -325,6 +347,12 @@ randomNeedles <- function(tumor, nsamples, threshold = 0.05) {
       }
     }
     counter <- counter + 1
+  }
+  
+  #if coverage non-zero, simulate NGS
+  if(coverage != 0) {
+    depth <- rpois(1,coverage)
+    df <- apply(df, c(1,2), function(x) return(rbinom(1,depth,x)))/depth
   }
   
   return(as.data.frame(df))

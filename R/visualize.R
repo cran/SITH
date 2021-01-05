@@ -4,7 +4,7 @@
 #' @description Interactive visualization of the simulated tumor using the \code{rgl} package (if available). 
 #' 
 #' @param tumor A list which is the output of \code{\link{simulateTumor}()}.
-#' @param plot.type Which type of plot to draw. "Normal" assigns a random rgb value to each allele while
+#' @param plot.type Which type of plot to draw. "Normal" assigns a random rgb value to each genotype while
 #' "heat" colors cells with more mutations red and cells with fewer mutations blue. 
 #' @param background If rgl is installed, this will set the color of the background
 #' @param axes Will include axes (rgl only). 
@@ -22,33 +22,33 @@ visualizeTumor <- function(tumor, plot.type = "normal", background = "black", ax
   if(!requireNamespace("rgl", quietly = TRUE)) {
     warning("Installing package 'rgl' is recommended for interactive visualization. Feautures and performance limited.")
     vistum_scatter(tumor, plot.type = plot.type)
-  }
-  min_x <- min(tumor$cell_ids[,1])
-  max_x <- max(tumor$cell_ids[,1])
-  min_y <- min(tumor$cell_ids[,2])
-  max_y <- max(tumor$cell_ids[,2])
-  min_z <- min(tumor$cell_ids[,3])
-  max_z <- max(tumor$cell_ids[,3])
+  } else{
+    min_x <- min(tumor$cell_ids[,1])
+    max_x <- max(tumor$cell_ids[,1])
+    min_y <- min(tumor$cell_ids[,2])
+    max_y <- max(tumor$cell_ids[,2])
+    min_z <- min(tumor$cell_ids[,3])
+    max_z <- max(tumor$cell_ids[,3])
   
-  if(plot.type == "heat") {
+    if(plot.type == "heat") {
     col.pal <- colorRampPalette(c("blue", "red"))
     hotcold <- col.pal(max(tumor$cell_ids$nmuts) + 1)
     rgl::open3d()
     rgl::bg3d(background)
     rgl::plot3d(tumor$cell_ids[,1], tumor$cell_ids[,2], tumor$cell_ids[,3], 
-           col = hotcold[tumor$cell_ids$nmuts+1], box = axes, axes = axes,
-           xlim = c(min_x - 10, max_x + 10), ylim = c(min_y - 10, max_y + 10), size = 5,
-           zlim = c(min_z - 10, max_z + 10), xlab = ifelse(axes,"X",""), ylab = ifelse(axes,"Y",""), 
-           zlab = ifelse(axes,"Z",""))
-  }
-  else if(plot.type == "normal") {
-  rgl::open3d()
-  rgl::bg3d(background)
-  rgl::plot3d(tumor$cell_ids[,1], tumor$cell_ids[,2], tumor$cell_ids[,3], 
-         col = tumor$color_scheme[tumor$cell_ids[,4]+1],  box = axes, axes = axes,
-         xlim = c(min_x - 10, max_x + 10), ylim = c(min_y - 10, max_y + 10), size = 5,
-         zlim = c(min_z - 10, max_z + 10), xlab = ifelse(axes,"X",""), ylab = ifelse(axes,"Y",""), 
-         zlab = ifelse(axes,"Z",""))
+            col = hotcold[tumor$cell_ids$nmuts+1], box = axes, axes = axes,
+            xlim = c(min_x - 10, max_x + 10), ylim = c(min_y - 10, max_y + 10), size = 5,
+            zlim = c(min_z - 10, max_z + 10), xlab = ifelse(axes,"X",""), ylab = ifelse(axes,"Y",""), 
+            zlab = ifelse(axes,"Z",""))
+    } else if(plot.type == "normal") {
+      rgl::open3d()
+      rgl::bg3d(background)
+      rgl::plot3d(tumor$cell_ids[,1], tumor$cell_ids[,2], tumor$cell_ids[,3], 
+          col = tumor$color_scheme[tumor$cell_ids[,4]+1],  box = axes, axes = axes,
+          xlim = c(min_x - 10, max_x + 10), ylim = c(min_y - 10, max_y + 10), size = 5,
+          zlim = c(min_z - 10, max_z + 10), xlab = ifelse(axes,"X",""), ylab = ifelse(axes,"Y",""), 
+          zlab = ifelse(axes,"Z",""))
+    }
   }
 }
 
@@ -59,7 +59,7 @@ visualizeTumor <- function(tumor, plot.type = "normal", background = "black", ax
 #' @param tumor A list which is the output of \code{\link{simulateTumor}()}.
 #' @param slice.dim One of "x", "y" or "z", which denotes the dimension which will be fixed to obtain a 2D cross section.
 #' @param level Which value will the dimension given in \code{slice.dim} be fixed at? 
-#' @param plot.type Which type of plot to draw. "Normal" assigns a random rgb value to each allele while
+#' @param plot.type Which type of plot to draw. "Normal" assigns a random rgb value to each genotype while
 #' "heat" colors cells with more mutations red and cells with fewer mutations blue. This is exactly the same as \code{plot.type}
 #' in \code{visualizeTumor}. 
 #' 
@@ -80,7 +80,7 @@ plotSlice <- function(tumor, slice.dim = "x", level = 0, plot.type = "normal") {
     
   }
   else if(plot.type == "normal") {
-    plot(df_slice[,1], df_slice[,2], col = tumor$color_scheme[df_slice$allele+1], pch = 16,
+    plot(df_slice[,1], df_slice[,2], col = tumor$color_scheme[df_slice$genotype+1], pch = 16,
          xlab = NA, ylab = NA)
   }    
 }

@@ -1,8 +1,18 @@
 useDynLib(SITH, .registration=TRUE)
-export(simulateTumor, visualizeTumor, plotSlice, spatialDistribution,
-bulkSample, randomBulkSamples, singleCell, randomSingleCells, randomNeedles)
+export(simulateTumor, 
+visualizeTumor, 
+plotSlice, 
+spatialDistribution,
+bulkSample, 
+randomBulkSamples, 
+singleCell, 
+randomSingleCells, 
+randomNeedles,
+progressionChain,
+progressionDAG_from_igraph)
 importFrom(Rcpp, evalCpp)
 importFrom("grDevices", "colorRampPalette", "rgb")
 importFrom("graphics", "hist", "par", "plot")
 importFrom("stats", "rbinom")
+importFrom("stats", "rpois") 
 importFrom("scatterplot3d", "scatterplot3d") 

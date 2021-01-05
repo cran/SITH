@@ -5,20 +5,32 @@
 
 using namespace Rcpp;
 
-// simulate_tumor
-Rcpp::List simulate_tumor(Rcpp::List input);
-RcppExport SEXP _SITH_simulate_tumor(SEXP inputSEXP) {
+// simulateTumorcpp
+Rcpp::List simulateTumorcpp(Rcpp::List input);
+RcppExport SEXP _SITH_simulateTumorcpp(SEXP inputSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Rcpp::List >::type input(inputSEXP);
-    rcpp_result_gen = Rcpp::wrap(simulate_tumor(input));
+    rcpp_result_gen = Rcpp::wrap(simulateTumorcpp(input));
+    return rcpp_result_gen;
+END_RCPP
+}
+// simulateTumorUDTcpp
+Rcpp::List simulateTumorUDTcpp(Rcpp::List input);
+RcppExport SEXP _SITH_simulateTumorUDTcpp(SEXP inputSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type input(inputSEXP);
+    rcpp_result_gen = Rcpp::wrap(simulateTumorUDTcpp(input));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_SITH_simulate_tumor", (DL_FUNC) &_SITH_simulate_tumor, 1},
+    {"_SITH_simulateTumorcpp", (DL_FUNC) &_SITH_simulateTumorcpp, 1},
+    {"_SITH_simulateTumorUDTcpp", (DL_FUNC) &_SITH_simulateTumorUDTcpp, 1},
     {NULL, NULL, 0}
 };
 
